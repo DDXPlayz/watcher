@@ -29,7 +29,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build image
-        run: docker build -t doomsday-watcher .
+        run: |
+          # On failure, repeat the end of the build log as an annotation (readable without signing in).
+          if ! docker build --progress=plain -t doomsday-watcher . > build.log 2>&1; then
+            cat build.log
+            echo "::error title=docker build failed::$(tail -60 build.log | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')"
+            exit 1
+          fi
+          tail -5 build.log
       - name: Start and wait for /health
         run: |
           docker run -d --name w -p 8080:8080 --shm-size 256m \
