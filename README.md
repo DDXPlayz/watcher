@@ -8,7 +8,7 @@ It checks PVR INOX about once a minute and District every two minutes, confirms 
 
 **Coverage:** PVR INOX and District are automated. District can only fully confirm a show on the day itself (robots.txt); before that it gives early signals. BookMyShow blocks automated browsers and prohibits them, so you get a link and optional reminders. Details in [docs/PLATFORM_RESEARCH.md](docs/PLATFORM_RESEARCH.md).
 
-**Hosting:** Render runs it all the time; GitHub Actions runs a backup check every 5 minutes. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+**Hosting:** run it on a PC on a home connection (`scripts/start-windows.ps1`). PVR and District refuse data-centre networks: from GitHub's servers both answered HTTP 403, so cloud hosting is not used. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ## Start
 

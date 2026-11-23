@@ -1,6 +1,10 @@
 # Deployment
 
-Recommended setup: **Render** runs the watcher all the time, with the dashboard. **GitHub Actions** runs a backup check every 5 minutes. Each sends alerts on its own, so either can fail without you missing the release.
+> **Update, 24 November: run it at home.** From GitHub's servers (a US data centre) both PVR and District answered HTTP 403, so the GitHub backup cannot check them and its schedule is switched off. Render is also a data centre and would very likely be refused the same way; it was not tried. The watcher works from an Indian home connection. Use **Run on Windows, free** below. Nothing in this project tries to get past a block.
+>
+> The sections on GitHub and Render are kept for reference.
+
+Original recommended setup: **Render** runs the watcher all the time, with the dashboard. **GitHub Actions** runs a backup check every 5 minutes. Each sends alerts on its own, so either can fail without you missing the release.
 
 | | Render (main) | GitHub Actions (backup) |
 |---|---|---|

@@ -44,7 +44,7 @@ Press reports say advance booking opened on 17 November with premium screens fir
 
 - The ScreenX show will appear under film id 35312. Ramayana's formats all share one id, which supports this.
 - The seat token stays stable. It is not relied on: screenings are keyed by verified attributes.
-- A data-centre server will be served like a home connection. **Check this first on your VPS.**
+- ~~A data-centre server will be served like a home connection.~~ **Disproved 24 Nov:** from GitHub Actions (US data centre) PVR and District both answered HTTP 403. An Indian VPS was not tried; a home connection works.
 - All dates fit in the tab row. Four were shown.
 
 **Not done on purpose.** The site's own API is not called, no seat is ever selected, notices are never accepted, and a 403 or block page is never worked around.

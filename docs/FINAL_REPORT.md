@@ -7,6 +7,8 @@ Live accuracy check on films showing that day at Jasola, through the production 
 - District read 37 shows of 14 films. With ScreenX controls as the target (Ramayana, Hindi, 3:25 PM; The Hunger Games: Sunrise on the Reaping, English, 9:15 AM), each matched exactly its one show; all 22 other shows of those films were rejected for format or time.
 - PVR found the Ramayana 3:25 PM ScreenX show at Jasola, opened its seat page and read 65 of 171 free, the same count District reported.
 - Full pipeline (`--once`, ntfy): both platforms detected the show, two alerts reached ntfy.sh (the second titled "also on PVR INOX"), and a second run sent nothing.
+- Docker: the image now builds and starts in GitHub's CI (it lacked `libatomic1`). Peak memory 206 MiB in 90 s, but with both platforms refused, so the browser path was not exercised there.
+- **From GitHub's servers, PVR and District both answered HTTP 403.** The watcher reported ACCESS_DENIED, not "no tickets", as designed. The GitHub schedule is switched off and cloud hosting is not recommended; the watcher runs on a home PC (`scripts/start-windows.ps1`).
 - Fixed: in one-shot mode an alert waited for slower platforms to finish (7.5 s in the live run). It now goes out as soon as its own platform's check is stored (0.7 s). Test added. 270 tests pass.
 
 ## Update, 23 November

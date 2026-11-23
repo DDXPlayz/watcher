@@ -1,11 +1,13 @@
-# Backup watcher: one check of every platform every 5 minutes, alerts sent from here too.
-# GitHub may start scheduled runs late or skip them under load, so this backs up Render; it does not replace it.
-# Free minutes are unlimited only for public repositories. Secrets stay secret either way.
+# Backup watcher: one check of every platform, alerts sent from here too.
+#
+# SCHEDULE OFF (24 Nov 2026): from GitHub's network both PVR and District answered HTTP 403 (CI run of 329fb38).
+# Every scheduled run would fail and GitHub would email about each one. Run it by hand (Actions -> watch ->
+# Run workflow) to re-test; if the platforms ever answer, restore:
+#   schedule:
+#     - cron: "*/5 * * * *"
 name: watch
 
 on:
-  schedule:
-    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 concurrency:
