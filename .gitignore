@@ -9,3 +9,4 @@ data/*
 !data/.gitkeep
 logs/*
 !logs/.gitkeep
+MORNING.md

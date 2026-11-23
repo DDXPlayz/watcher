@@ -68,6 +68,26 @@ docker compose exec watcher python -c "import sqlite3; sqlite3.connect('data/wat
 docker compose cp watcher:/srv/data/backup.db ./backup.db
 ```
 
+## Run on Windows, free (no card)
+
+The main watcher on your own PC, with GitHub as the backup. Everything it needs lives in `%USERPROFILE%\.doomsday-watcher`, outside OneDrive and git: `venv\`, `browsers\`, `data\`, `logs\` and `watcher.env` (your secrets, same names as `.env.example`).
+
+Start it (it restarts itself if it exits):
+
+```
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\start-windows.ps1
+```
+
+Start it automatically at sign-in (run once):
+
+```
+schtasks /Create /TN "Doomsday Watcher" /SC ONLOGON /RL LIMITED /TR "powershell -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File \"%CD%\scripts\start-windows.ps1\""
+```
+
+Keep the PC from sleeping while plugged in: Settings → System → Power → Screen and sleep → "When plugged in, put my device to sleep after" → Never.
+
+From your phone: install Tailscale on the PC and the phone (free), set `HOST=0.0.0.0` in `watcher.env`, restart, and open `http://<pc-name>:8080` on the phone. The dashboard password is in `watcher.env`.
+
 ## Run locally
 
 Windows:
