@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Doomsday Watcher</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230c1110'/%3E%3Ccircle cx='8' cy='8' r='4' fill='%2358c98a'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/assets/styles.css">
+  <script src="/assets/app.js" defer></script>
+</head>
+<body>
+  <header class="bar">
+    <div class="wordmark">DOOMSDAY WATCHER</div>
+    <div class="overall" id="overall"><span class="dot"></span><span id="overall-text">Connecting</span></div>
+    <time class="clock" id="clock"></time>
+  </header>
+
+  <p class="offline" id="offline" role="alert" hidden></p>
+
+  <main>
+    <section class="verdict" id="verdict" aria-live="polite">
+      <div>
+        <h1 id="verdict-title">Loading</h1>
+        <p id="verdict-note"></p>
+      </div>
+      <dl class="target" id="target"></dl>
+    </section>
+
+    <section class="screenings" id="screenings" hidden aria-label="Matching screenings"></section>
+
+    <section class="stats" id="stats" aria-label="Summary"></section>
+
+    <section class="platforms" id="platforms" aria-label="Platforms"></section>
+
+    <section class="controls" aria-label="Controls">
+      <button type="button" id="btn-run" class="primary">Pause monitoring</button>
+      <button type="button" id="btn-check">Check now</button>
+      <button type="button" id="btn-test">Test notification</button>
+      <button type="button" id="btn-settings">Change target</button>
+      <a class="button" href="/api/export?fmt=csv">Export events (CSV)</a>
+      <a class="button" href="/api/export?fmt=json">Export events (JSON)</a>
+      <button type="button" id="btn-logout" hidden>Sign out</button>
+    </section>
+    <p class="toast" id="toast" role="status"></p>
+
+    <section class="history">
+      <div class="tabs" role="tablist" aria-label="History">
+        <button type="button" role="tab" data-tab="events" aria-selected="true">Timeline</button>
+        <button type="button" role="tab" data-tab="checks" aria-selected="false">Checks</button>
+        <button type="button" role="tab" data-tab="notifications" aria-selected="false">Notifications</button>
+        <button type="button" role="tab" data-tab="performance" aria-selected="false">Performance</button>
+        <button type="button" role="tab" data-tab="logs" aria-selected="false">Logs</button>
+      </div>
+      <div class="panel" id="panel" role="tabpanel"></div>
+    </section>
+  </main>
+
+  <dialog id="settings">
+    <form id="settings-form">
+      <h2>Change target</h2>
+      <p>The film, cinema and format are tied to identifiers verified on each platform and can only be changed in config.yaml.</p>
+      <label>Date <input type="date" name="date" required></label>
+      <label>Language <input type="text" name="language" required maxlength="32" pattern="[A-Za-z ]+"></label>
+      <div class="pair">
+        <label>Earliest show <input type="time" name="earliest_time" required></label>
+        <label>Latest show <input type="time" name="latest_time" required></label>
+      </div>
+      <label>Type CHANGE TARGET to confirm <input type="text" name="confirm" autocomplete="off" required pattern="CHANGE TARGET"></label>
+      <p class="form-error" id="settings-error" role="alert"></p>
+      <div class="form-actions">
+        <button type="button" id="settings-cancel">Keep current target</button>
+        <button type="submit" class="primary">Change target</button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>

@@ -1,0 +1,48 @@
+name: test
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+      - run: playwright install --with-deps --only-shell chromium
+      - run: ruff check .
+      - run: mypy app
+      - run: python -m pytest -q
+
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t doomsday-watcher .
+      - name: Start and wait for /health
+        run: |
+          docker run -d --name w -p 8080:8080 --shm-size 256m \
+            -e HOST=0.0.0.0 -e DASHBOARD_PASSWORD=ci-password-123 -e RUNNER=ci \
+            doomsday-watcher
+          for i in $(seq 1 60); do
+            if curl -fs http://127.0.0.1:8080/health; then echo; docker logs w | tail -20; exit 0; fi
+            sleep 3
+          done
+          docker logs w; exit 1
+      - name: Memory while checking (Render Starter has 512 MB)
+        run: |
+          for i in $(seq 1 45); do
+            m=$(docker stats --no-stream --format '{{.MemUsage}}' w | cut -d/ -f1)
+            echo "$m"; sleep 2
+          done

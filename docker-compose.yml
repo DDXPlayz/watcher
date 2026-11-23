@@ -1,0 +1,28 @@
+services:
+  watcher:
+    build: .
+    env_file: .env
+    environment:
+      HOST: 0.0.0.0        # inside the container only; see the port mapping below
+      PORT: "8080"
+      TZ: Asia/Kolkata
+    ports:
+      - "127.0.0.1:8080:8080"   # reachable only from the server itself; use an SSH tunnel or HTTPS proxy
+    volumes:
+      - watcher-data:/srv/data
+      - watcher-logs:/srv/logs
+      - ./config.yaml:/srv/config.yaml:ro
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 45s
+    shm_size: 256m
+    mem_limit: 1200m
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    logging:
+      driver: json-file
+      options: { max-size: 10m, max-file: "3" }
+
+volumes:
+  watcher-data:
+  watcher-logs:

@@ -1,0 +1,46 @@
+# Render Blueprint: the always-on watcher with its dashboard.
+# Paid plan on purpose: free web services sleep after 15 idle minutes and lose their files on restart,
+# which would stop checks and repeat alerts. Singapore is Render's closest region to India.
+services:
+  - type: web
+    name: doomsday-watcher
+    runtime: docker
+    region: singapore
+    plan: starter
+    healthCheckPath: /health
+    autoDeploy: true
+    disk:
+      name: watcher-data
+      mountPath: /srv/data
+      sizeGB: 1
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: RUNNER
+        value: main
+      - key: DASHBOARD_PASSWORD
+        sync: false
+      - key: NOTIFY_PROVIDERS
+        sync: false
+      - key: PUSHOVER_APP_TOKEN
+        sync: false
+      - key: PUSHOVER_USER_KEY
+        sync: false
+      - key: NTFY_TOPIC
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_USERNAME
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: EMAIL_TO
+        sync: false
+      - key: CALLMEBOT_PHONE
+        sync: false
+      - key: CALLMEBOT_APIKEY
+        sync: false
+      - key: HEARTBEAT_URL
+        sync: false

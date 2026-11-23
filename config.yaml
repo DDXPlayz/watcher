@@ -1,0 +1,46 @@
+# Behaviour only. Secrets live in .env. The file is validated at startup; unknown keys are rejected.
+target:
+  movie: "Avengers: Doomsday"
+  cinema: "INOX Pacific Mall, Jasola"
+  city: "New Delhi"
+  country: "India"
+  date: "2026-12-19"
+  language: "English"
+  format: "ScreenX"
+  timezone: "Asia/Kolkata"
+  earliest_time: "14:00"
+  latest_time: "18:00"
+
+monitoring:
+  enabled: true
+  default_interval_seconds: 60
+  adaptive_polling: true
+  respect_rate_limits: true
+
+platforms:
+  pvr:
+    enabled: true
+    priority: 1
+    interval_seconds: 60
+  bookmyshow:
+    enabled: true            # never sends requests; see docs/PLATFORM_RESEARCH.md
+    priority: 2
+    reminder_times_ist: []   # e.g. ["08:00", "13:00", "16:00", "20:00"] for manual-check reminders
+  district:
+    enabled: true
+    priority: 3
+    interval_seconds: 120
+    terms_ack: true          # your decision (23 Nov); see docs/PLATFORM_RESEARCH.md
+
+# Channels are normally chosen with NOTIFY_PROVIDERS in .env; every enabled channel gets every alert.
+notifications:
+  pushover: { enabled: false }
+  ntfy: { enabled: false }
+  telegram: { enabled: false }
+  whatsapp: { enabled: false }
+  whatsapp_cloud: { enabled: false }
+  email: { enabled: false }
+
+checkout_assistance:
+  enabled: false
+  payment_automation: false
