@@ -39,17 +39,26 @@ jobs:
           tail -5 build.log
       - name: Start and wait for /health
         run: |
-          docker run -d --name w -p 8080:8080 --shm-size 256m \
-            -e HOST=0.0.0.0 -e DASHBOARD_PASSWORD=ci-password-123 -e RUNNER=ci \
-            doomsday-watcher
+          note() { echo "::error title=$1::$(printf '%s' "$2" | tail -25 | cut -c1-150 | sed 's/%/%25/g' | sed ':a;N;$!ba;s/
+/%0A/g')"; }
+          # Host port 18080: something on the runner may already use 8080.
+          if ! out=$(docker run -d --name w -p 18080:8080 --shm-size 256m               -e HOST=0.0.0.0 -e DASHBOARD_PASSWORD=ci-password-123 -e RUNNER=ci               doomsday-watcher 2>&1); then
+            echo "$out"; note "docker run failed" "$out"; exit 1
+          fi
           for i in $(seq 1 60); do
-            if curl -fs http://127.0.0.1:8080/health; then echo; docker logs w | tail -20; exit 0; fi
+            if curl -fs http://127.0.0.1:18080/health; then echo; docker logs w 2>&1 | tail -20; exit 0; fi
             sleep 3
           done
-          docker logs w; exit 1
+          logs=$(docker logs w 2>&1); echo "$logs"; note "container never became healthy" "$logs"; exit 1
       - name: Memory while checking (Render Starter has 512 MB)
         run: |
+          peak=0
           for i in $(seq 1 45); do
             m=$(docker stats --no-stream --format '{{.MemUsage}}' w | cut -d/ -f1)
-            echo "$m"; sleep 2
+            echo "$m"
+            mib=$(echo "$m" | awk '/GiB/{printf "%d", $1*1024; next} /MiB/{printf "%d", $1; next} {print 0}')
+            [ "$mib" -gt "$peak" ] && peak=$mib
+            sleep 2
           done
+          echo "::notice title=memory::peak ${peak} MiB over 90 s (Render Starter has 512 MB)"
+          docker logs w 2>&1 | grep '"check ' | tail -6 | cut -c1-200 | while read -r l; do echo "::notice title=check::$l"; done
