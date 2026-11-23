@@ -80,6 +80,20 @@ jobs:
       - name: Check once
         run: python -m app.main --once
 
+      # One public line per platform, so results can be read without opening the log.
+      - name: Report
+        if: always()
+        run: |
+          python - <<'PY'
+          import sqlite3, pathlib
+          db = pathlib.Path("data/watcher.db")
+          if db.exists():
+              for pid, state, kind, detail in sqlite3.connect(db).execute(
+                  "SELECT id, state, error_kind, error_detail FROM platforms ORDER BY id"
+              ):
+                  print(f"::notice title={pid}::{state} {kind or ''} {(detail or '')[:200]}")
+          PY
+
       - name: Save state
         if: always()
         uses: actions/cache/save@v4

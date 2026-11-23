@@ -4,7 +4,9 @@ ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PLAYWRIGHT_BROWSERS_PATH=/opt/b
 WORKDIR /srv
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt \
+# libatomic1: Playwright's bundled Node needs it and the slim image lacks it.
+RUN apt-get update && apt-get install -y --no-install-recommends libatomic1 \
+ && pip install --no-cache-dir -r requirements.txt \
  && playwright install --with-deps --only-shell chromium \
  && rm -rf /var/lib/apt/lists/*
 
