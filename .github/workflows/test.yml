@@ -39,8 +39,7 @@ jobs:
           tail -5 build.log
       - name: Start and wait for /health
         run: |
-          note() { echo "::error title=$1::$(printf '%s' "$2" | tail -25 | cut -c1-150 | sed 's/%/%25/g' | sed ':a;N;$!ba;s/
-/%0A/g')"; }
+          note() { echo "::error title=$1::$(printf '%s' "$2" | tail -25 | cut -c1-150 | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')"; }
           # Host port 18080: something on the runner may already use 8080.
           if ! out=$(docker run -d --name w -p 18080:8080 --shm-size 256m               -e HOST=0.0.0.0 -e DASHBOARD_PASSWORD=ci-password-123 -e RUNNER=ci               doomsday-watcher 2>&1); then
             echo "$out"; note "docker run failed" "$out"; exit 1
