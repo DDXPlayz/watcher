@@ -90,7 +90,13 @@ schtasks /Create /TN "Doomsday Watcher" /SC ONLOGON /RL LIMITED /TR "powershell 
 
 Keep the PC from sleeping while plugged in: Settings → System → Power → Screen and sleep → "When plugged in, put my device to sleep after" → Never.
 
-From your phone: install Tailscale on the PC and the phone (free), set `HOST=0.0.0.0` in `watcher.env`, restart, and open `http://<pc-name>:8080` on the phone. The dashboard password is in `watcher.env`.
+From your phone, anywhere: install Tailscale on the PC and the phone (free, same account), keep `HOST=127.0.0.1` and set `COOKIE_SECURE=true` in `watcher.env`, then run once on the PC:
+
+```
+tailscale serve --bg 8080
+```
+
+It prints a private HTTPS address (`https://<pc-name>.<tailnet>.ts.net`) that only your Tailscale devices can open. The first time, Tailscale asks you to enable Serve for your account. Sign in with the password in `watcher.env`.
 
 ## Run locally
 
