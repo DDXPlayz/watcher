@@ -89,6 +89,15 @@ class ProviderToggle(Strict):
     enabled: bool = False
 
 
+class AlarmConfig(Strict):
+    """After a ticket alert, repeat it until someone presses "I've seen it" on the dashboard."""
+
+    enabled: bool = True
+    every_seconds: int = Field(60, ge=30, le=3600)
+    # Push channels by default: a message a minute by email or WhatsApp would get those accounts limited.
+    channels: list[ProviderName] = Field(default_factory=lambda: ["ntfy", "pushover", "telegram"])  # type: ignore[arg-type]
+
+
 class NotificationsConfig(Strict):
     telegram: ProviderToggle = Field(default_factory=ProviderToggle)
     pushover: ProviderToggle = Field(default_factory=ProviderToggle)
@@ -100,6 +109,7 @@ class NotificationsConfig(Strict):
     order: list[ProviderName] = Field(default_factory=lambda: list(PROVIDERS))  # type: ignore[arg-type]
     max_attempts: int = Field(60, ge=3, le=500)
     system_alerts: bool = True
+    alarm: AlarmConfig = Field(default_factory=AlarmConfig)
 
 
 class CheckoutConfig(Strict):
@@ -169,6 +179,7 @@ class AppConfig(Strict):
     data_dir: Path = ROOT / "data"
     log_dir: Path = ROOT / "logs"
     database_url: str = ""
+    dashboard_url: str = ""  # where the dashboard is reached from a phone; put in alarm messages
     runner: str = "main"  # shown in alerts from a second, backup watcher
     secrets: Secrets = Field(default_factory=Secrets, exclude=True, repr=False)
 
@@ -225,7 +236,7 @@ def load_config(path: Path | None = None, env: dict[str, str] | None = None) -> 
     path = path or Path(env.get("CONFIG_FILE") or ROOT / "config.yaml")
     raw: dict[str, Any] = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
 
-    for field in ("host", "port", "database_url", "data_dir", "log_dir", "runner"):
+    for field in ("host", "port", "database_url", "data_dir", "log_dir", "runner", "dashboard_url"):
         if env.get(field.upper()):
             raw[field] = env[field.upper()]
     if env.get("COOKIE_SECURE"):

@@ -28,7 +28,10 @@ class TelegramProvider(Provider):
         }
         if message.url:
             text += f'\n\n<b>{message.link_label.upper()}:</b> <a href="{escape(message.url, quote=True)}">{escape(message.url)}</a>'
-            payload["reply_markup"] = {"inline_keyboard": [[{"text": message.link_label, "url": message.url}]]}
+            buttons = [{"text": message.link_label, "url": message.url}]
+            if message.ack_url:
+                buttons.append({"text": "Stop alerts", "url": message.ack_url})
+            payload["reply_markup"] = {"inline_keyboard": [buttons]}
         payload["text"] = text
         response = await self._post(self._url, json=payload)
         if not response.json().get("ok"):

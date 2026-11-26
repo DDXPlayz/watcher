@@ -182,6 +182,12 @@ async def test_notification(request: Request) -> dict[str, bool]:
     return {"queued": True}
 
 
+@router.post("/api/alarm/ack")
+async def acknowledge_alarm(request: Request) -> dict[str, int]:
+    """Stops the repeating ticket alarm for the shows on sale now. A show that comes back on sale rings again."""
+    return {"acknowledged": await watcher(request).acknowledge_alarm()}
+
+
 @router.put("/api/target")
 async def update_target(body: TargetBody, request: Request) -> dict[str, Any]:
     try:

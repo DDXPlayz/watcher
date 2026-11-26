@@ -12,7 +12,7 @@ from typing import Any
 import httpx
 
 from app.config import AppConfig
-from app.database.models import PlatformRow
+from app.database.models import PlatformRow, ScreeningRow
 from app.database.repository import Repository
 from app.domain import POLICY_KINDS, ErrorKind, PlatformResult, SeatStatus, State, Target
 from app.monitor.engine import Engine
@@ -52,7 +52,7 @@ class Watcher:
         self.repo = Repository(cfg.db_url)
         self._http = httpx.AsyncClient(timeout=12)
         chosen = build_providers(cfg, self._http) if providers is None else providers
-        self.dispatcher = Dispatcher(self.repo, chosen, cfg.notifications.max_attempts, cfg.runner)
+        self.dispatcher = Dispatcher(self.repo, chosen, cfg.notifications.max_attempts, cfg.runner, cfg.dashboard_url)
         self.engine = Engine(self.repo, cfg.target, cfg.aliases, self.dispatcher.wake)
         self.platforms = build_platforms(cfg) if platforms is None else platforms
         self.workers = {
@@ -227,6 +227,7 @@ class Watcher:
         await self._alert_if_all_failing(overall)
         await self._heartbeat(overall)
         await self._reminders()
+        await self._alarm()
         if time.monotonic() - self._last_prune > 21600 or not self._last_prune:
             self._last_prune = time.monotonic()
             await self.repo.prune()
@@ -267,6 +268,83 @@ class Watcher:
             f"reminder-bms-{now:%Y-%m-%d-%H:%M}",
             bms.movie_url,
         )
+
+    # -- alarm: repeat a ticket alert until it is acknowledged ---------------------------------------
+
+    async def _ringing(self) -> list[ScreeningRow]:
+        """Target screenings on sale whose current availability has not been acknowledged.
+
+        Keyed by generation, so a show that sells out and comes back on sale rings again.
+        Staleness does not silence it: a failing check is not evidence the tickets are gone.
+        """
+        target = self.engine.target
+        acked = set(await self.repo.get_setting("alarm_acked", []))
+        return [
+            s
+            for s in await self.repo.screenings()
+            if s.availability == State.AVAILABLE.value
+            and s.date == target.date
+            and target.earliest_time <= s.showtime <= target.latest_time
+            and f"{s.id}:{s.generation}" not in acked
+        ]
+
+    async def _alarm(self) -> None:
+        config = self.cfg.notifications.alarm
+        ringing = await self._ringing() if config.enabled and not self.finished else []
+        state = await self.repo.get_setting("alarm")
+        if not ringing:
+            if state is not None:
+                await self.repo.set_setting("alarm", None)
+            return
+        now = utcnow()
+        if state is None:
+            # The ticket alert itself is the first message; repeats start one interval later.
+            await self.repo.set_setting("alarm", {"since": now.isoformat(), "last": now.isoformat(), "count": 0})
+            return
+        if (now - dt.datetime.fromisoformat(state["last"])).total_seconds() < config.every_seconds:
+            return
+        count = state["count"] + 1
+        await self.repo.set_setting("alarm", {**state, "last": now.isoformat(), "count": count})
+        show = min(ringing, key=lambda s: (s.platform != "pvr", s.showtime))
+        seats = f"{show.seats_available} seats visible" if show.seats_available is not None else "seat count unknown"
+        lines = [
+            f"{show.cinema}, {fmt_time(show.showtime)} IST, {show.format}",
+            f"{PLATFORM_NAMES[show.platform]}: {seats}",
+        ]
+        if (shows := len({s.entity_key for s in ringing})) > 1:  # one show on two platforms counts once
+            lines.append(f"{shows} matching shows on sale")
+        stop = f"Stop these alerts: press \"I've seen it\" on the dashboard {self.cfg.dashboard_url}".rstrip()
+        lines += ["", f"Reminder {count}, every {config.every_seconds} s since the first alert.", stop]
+        await self.dispatcher.enqueue(
+            "alarm",
+            f"STILL ON SALE: {show.movie.upper()} SCREENX",
+            "\n".join(lines),
+            f"alarm-{state['since']}-{count}",
+            show.booking_url,
+            only=list(config.channels),
+        )
+
+    async def acknowledge_alarm(self) -> int:
+        ringing = await self._ringing()
+        if ringing:
+            acked = list(await self.repo.get_setting("alarm_acked", []))
+            acked += [f"{s.id}:{s.generation}" for s in ringing]
+            await self.repo.set_setting("alarm_acked", acked)
+            await self.repo.add_event(EventType.SYSTEM, f"Alarm acknowledged on the dashboard ({len(ringing)} show(s))")
+        await self.repo.set_setting("alarm", None)
+        return len({s.entity_key for s in ringing})
+
+    async def alarm_status(self) -> dict[str, Any]:
+        state = await self.repo.get_setting("alarm")
+        ringing = await self._ringing() if self.cfg.notifications.alarm.enabled and not self.finished else []
+        return {
+            "enabled": self.cfg.notifications.alarm.enabled,
+            "ringing": bool(ringing),
+            "shows": len({s.entity_key for s in ringing}),
+            "since": state["since"] if state else None,
+            "repeats": state["count"] if state else 0,
+            "every_seconds": self.cfg.notifications.alarm.every_seconds,
+        }
 
     # -- status -----------------------------------------------------------------------------------
 
@@ -412,6 +490,7 @@ class Watcher:
             "matches_ever": sum(1 for s in screenings if s["in_target"]),
             "providers": [p.name for p in self.dispatcher.providers],
             "auth_required": bool(self.cfg.secrets.dashboard_password),
+            "alarm": await self.alarm_status(),
             "metrics": metrics,
             "stale_after_seconds": stale_after,
         }

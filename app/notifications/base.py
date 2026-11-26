@@ -12,15 +12,16 @@ class Message(BaseModel):
     title: str
     body: str
     url: str | None = None
-    kind: str = "ticket"  # ticket | update | system | reminder | test
+    kind: str = "ticket"  # ticket | alarm | update | system | reminder | test
+    ack_url: str | None = None  # the dashboard, where a repeating alarm is stopped
 
     @property
     def urgent(self) -> bool:
-        return self.kind == "ticket"
+        return self.kind in ("ticket", "alarm")
 
     @property
     def link_label(self) -> str:
-        return "Book now" if self.kind in ("ticket", "update") else "Open page"
+        return "Book now" if self.kind in ("ticket", "alarm", "update") else "Open page"
 
 
 class DeliveryError(Exception):

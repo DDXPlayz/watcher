@@ -33,9 +33,11 @@ from app.utils.time import utcnow
 logger = logging.getLogger("watcher.notify")
 
 EXPIRY = dt.timedelta(hours=6)
+ALARM_EXPIRY = dt.timedelta(minutes=3)
 BACKOFF_BASE, BACKOFF_CAP = 5.0, 300.0
 CLAIM_SECONDS = 90  # another process will not pick up a row while this one is sending it
 DONE = "DELIVERED"
+SKIPPED = "SKIPPED"  # channel left out of this message on purpose
 
 
 def build_providers(cfg: AppConfig, client: httpx.AsyncClient) -> list[Provider]:
@@ -63,8 +65,11 @@ def build_providers(cfg: AppConfig, client: httpx.AsyncClient) -> list[Provider]
 
 
 class Dispatcher:
-    def __init__(self, repo: Repository, providers: list[Provider], max_attempts: int = 60, runner: str = "main") -> None:
+    def __init__(
+        self, repo: Repository, providers: list[Provider], max_attempts: int = 60, runner: str = "main", ack_url: str = ""
+    ) -> None:
         self.repo = repo
+        self.ack_url = ack_url
         self.providers = providers
         self.max_attempts = max_attempts
         self.runner = runner
@@ -84,11 +89,19 @@ class Dispatcher:
     def wake(self) -> None:
         self._wake.set()
 
-    async def enqueue(self, kind: str, title: str, body: str, dedupe_key: str, url: str | None = None) -> bool:
+    async def enqueue(
+        self, kind: str, title: str, body: str, dedupe_key: str, url: str | None = None, only: list[str] | None = None
+    ) -> bool:
+        """Queue a message for every channel, or with `only`, for those channels (the rest are marked skipped)."""
+        channels: dict[str, Any] = {}
+        if only is not None:
+            channels = {p.name: {"status": SKIPPED} for p in self.providers if p.name not in only}
+            if len(channels) == len(self.providers):
+                return False  # none of the chosen channels is set up
         async with self.repo.transaction() as s:
             if await s.scalar(select(NotificationRow.id).where(NotificationRow.dedupe_key == dedupe_key)):
                 return False
-            s.add(NotificationRow(kind=kind, title=title, body=body, url=url, dedupe_key=dedupe_key, channels={}))
+            s.add(NotificationRow(kind=kind, title=title, body=body, url=url, dedupe_key=dedupe_key, channels=channels))
         self.wake()
         return True
 
@@ -146,18 +159,20 @@ class Dispatcher:
 
     def _message(self, row: NotificationRow) -> Message:
         body = row.body if self.runner == "main" else f"{row.body}\nSent by: {self.runner} watcher"
-        return Message(title=row.title, body=body, url=row.url, kind=row.kind)
+        ack_url = (self.ack_url or None) if row.kind == "alarm" else None
+        return Message(title=row.title, body=body, url=row.url, kind=row.kind, ack_url=ack_url)
 
     async def _attempt(self, row: NotificationRow) -> bool:
         channels: dict[str, Any] = dict(row.channels or {})
-        if utcnow() - row.created_at > EXPIRY:
+        # A repeat that could not go out in time is replaced by the next one rather than delivered late.
+        if utcnow() - row.created_at > (ALARM_EXPIRY if row.kind == "alarm" else EXPIRY):
             await self._finish(row, channels, error=row.last_error or "not delivered in time", expired=True)
             return False
         if not self.providers:
             await self._reschedule(row, channels, "no notification provider is configured", delay=60, count=False)
             return False
         message = self._message(row)
-        todo = [p for p in self.providers if (channels.get(p.name) or {}).get("status") != DONE]
+        todo = [p for p in self.providers if (channels.get(p.name) or {}).get("status") not in (DONE, SKIPPED)]
         results = await asyncio.gather(*(self._send(p, message) for p in todo))
         delivered_now = False
         errors: list[str] = []
@@ -232,7 +247,7 @@ class Dispatcher:
             fresh.channels = channels
             self._stamp_delivery(fresh, channels)
             some = fresh.provider is not None
-            everything = bool(channels) and all((c or {}).get("status") == DONE for c in channels.values())
+            everything = bool(channels) and all((c or {}).get("status") in (DONE, SKIPPED) for c in channels.values())
             if everything and not error:
                 status = "DELIVERED"
             elif some:

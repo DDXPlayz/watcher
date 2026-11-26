@@ -113,6 +113,16 @@ function verdict() {
   return ["", o.not_automated.length ? `Not on sale at ${names(o.checking)} yet` : "Not on sale yet", `${note}${uncovered}`];
 }
 
+function renderAlarm() {
+  const a = data.alarm;
+  $("alarm").hidden = !a?.ringing;
+  if (!a?.ringing) return;
+  const shows = a.shows === 1 ? "A matching show is" : `${a.shows} matching shows are`;
+  const sent = a.repeats ? ` ${a.repeats} repeat${a.repeats === 1 ? "" : "s"} sent so far.` : "";
+  const every = a.every_seconds % 60 === 0 ? (a.every_seconds === 60 ? "minute" : `${a.every_seconds / 60} minutes`) : `${a.every_seconds} seconds`;
+  $("alarm-note").textContent = `${shows} on sale. Your phone gets a reminder every ${every} until you press the button.${sent}`;
+}
+
 function renderTop() {
   const [oTone, oText] = OVERALL[data.overall.status] || ["info", data.overall.status];
   tone($("overall"), oTone);
@@ -252,7 +262,7 @@ async function refresh() {
     skew = Date.parse(data.now) - Date.now();
     lastLoad = Date.now();
     $("offline").hidden = true;
-    renderTop(); renderScreenings(); renderStats(); renderPlatforms(); renderControls();
+    renderAlarm(); renderTop(); renderScreenings(); renderStats(); renderPlatforms(); renderControls();
     await renderPanel();
   } catch (error) {
     if (error.message === "signed out") return;
@@ -292,6 +302,10 @@ $("btn-check").addEventListener("click", (e) => act(e.target, async () => {
   const pvr = result.refused.pvr;
   if (pvr) parts.push(`PVR INOX not started: ${pvr}.`);
   return parts.join(" ") || "No platform can be checked right now.";
+}));
+$("btn-ack").addEventListener("click", (e) => act(e.target, async () => {
+  const result = await (await call("/api/alarm/ack", { method: "POST" })).json();
+  return result.acknowledged ? "Alerts stopped. You will be alerted again if a show sells out and comes back." : "Nothing was ringing.";
 }));
 $("btn-test").addEventListener("click", (e) => act(e.target, async () => {
   await call("/api/test-notification", { method: "POST" });

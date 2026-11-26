@@ -24,9 +24,10 @@ class PushoverProvider(Provider):
             "user": self._user,
             "title": message.title[:250],
             "message": message.body[:1024],
-            "priority": 2 if message.urgent else 0,
+            # An alarm already repeats every minute, so it must not also start Pushover's own emergency repeats.
+            "priority": 2 if message.kind == "ticket" else 1 if message.kind == "alarm" else 0,
         }
-        if message.urgent:
+        if message.kind == "ticket":
             data |= {"retry": 30, "expire": 1800, "sound": "siren"}
         if message.url:
             data |= {"url": message.url[:512], "url_title": message.link_label}

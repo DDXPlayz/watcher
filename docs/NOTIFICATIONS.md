@@ -84,6 +84,7 @@ Allow notifications for each app and add them to any Focus mode you use at schoo
 ## What you will receive
 
 - Show available, available again, sold out, or a change in how full it is (at most one of the last per 30 minutes).
+- **Repeating alarm:** while a matching show is on sale, "STILL ON SALE" every minute until you press **I've seen it, stop alerts** on the dashboard. It also stops by itself if the show sells out, and starts again if seats come back. Reminders go to the push channels only (ntfy, Pushover, Telegram), not email or WhatsApp; ntfy and Telegram reminders carry a **Stop alerts** button that opens the dashboard (set `DASHBOARD_URL`). Change it under `notifications.alarm` in `config.yaml` (`enabled`, `every_seconds`, `channels`).
 - WATCHER HEALTH messages, at most one per kind per 6 hours (`notifications.system_alerts: false` to turn off).
 - BookMyShow reminders, only if you set times.
 - If you run both Render and GitHub, the same alert can arrive twice; the GitHub copy ends "Sent by: github watcher".

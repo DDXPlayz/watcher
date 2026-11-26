@@ -22,10 +22,15 @@ class NtfyProvider(Provider):
             "title": message.title,
             "message": message.body,
             "priority": 5 if message.urgent else 3,
-            "tags": ["tickets"] if message.kind in ("ticket", "update") else ["gear"],
+            "tags": ["rotating_light"] if message.kind == "alarm" else ["tickets"] if message.kind in ("ticket", "update") else ["gear"],
         }
+        actions: list[dict[str, str]] = []
         if message.url:
             payload["click"] = message.url
-            payload["actions"] = [{"action": "view", "label": message.link_label, "url": message.url}]
+            actions.append({"action": "view", "label": message.link_label, "url": message.url})
+        if message.ack_url:
+            actions.append({"action": "view", "label": "Stop alerts", "url": message.ack_url})
+        if actions:
+            payload["actions"] = actions
         headers = {"Authorization": f"Bearer {self._token}"} if self._token else {}
         await self._post(self._server, json=payload, headers=headers)

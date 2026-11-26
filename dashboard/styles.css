@@ -170,3 +170,14 @@ dialog .form-error, .form-error { color: var(--red); min-height: 1.4em; font-siz
   .controls > * { flex: 1 1 calc(50% - 10px); text-align: center; }
 }
 @media (prefers-reduced-motion: reduce) { .checking .dot { animation: none; } }
+
+.alarm { display: flex; gap: 20px; align-items: center; justify-content: space-between; padding: 20px 22px; margin-bottom: 28px;
+  border: 2px solid var(--green); border-radius: 12px; background: color-mix(in srgb, var(--green) 14%, var(--surface)); }
+.alarm[hidden] { display: none; }
+.alarm h2 { font-size: 20px; font-weight: 650; color: var(--green); }
+.alarm p { margin-top: 6px; color: var(--text); }
+.alarm button { flex: none; padding: 14px 20px; font-size: 16px; font-weight: 650; background: var(--green); color: #06120c; border-color: var(--green); }
+@media (max-width: 640px) {
+  .alarm { flex-direction: column; align-items: stretch; }
+  .alarm button { width: 100%; }
+}

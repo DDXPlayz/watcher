@@ -40,6 +40,8 @@ notifications:
   whatsapp: { enabled: false }
   whatsapp_cloud: { enabled: false }
   email: { enabled: false }
+  # After a ticket alert, remind every minute until "I've seen it" is pressed on the dashboard.
+  alarm: { enabled: true, every_seconds: 60, channels: [ntfy, pushover, telegram] }
 
 checkout_assistance:
   enabled: false
